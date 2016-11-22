@@ -1,53 +1,49 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
+using System.Collections.Generic;
 
 public class CharacterController : MonoBehaviour
 {
     #region Variables
-    public Transform retical;
-    public Transform barrel;
-    public GameObject playerBase;
+    public enum WeaponState
+    {
+        firstEnum = -1,
+        normalProjectile,
+        laserBeam,
+        lastEnum
+    }
 
-    //Weapon Variables
+    public WeaponState weaponState;
+
+    public List<Color> colourList;
+
     public GameObject projectile;
+    public Transform barrel;
     public Transform firePoint;
+
     [SerializeField] private float fireRate;
     [SerializeField] private float rotateSpeed;
+
+    [SerializeField] private float minBackFireTime;
+    [SerializeField] private float maxBackFireTime;
+
     private float fireRateTimer;
     private float timeOfFire;
 
+    private int scrollInput;
+
     public AnimationCurve barelRecoilCurve;
     Vector3 barrelStartPosition;
-
-    private bool test = false;
     #endregion
 
-    // Use this for initialization
-    void Start ()
-    {
-        
-        
-        
-	}
-	
-	// Update is called once per frame
-	void Update ()
+    void Update()
     {
         RotateTurret();
+        UpdateState();
         UpdateInput();
-        //UpdateRotation();
         UpdateTimers();
-
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            test = !test;
-        }
-	}
-
-    void UpdateRotation()
-    {
-        //Look at target
-        transform.LookAt(retical.position);
+        UpdateColour();
     }
 
     void UpdateTimers()
@@ -55,11 +51,15 @@ public class CharacterController : MonoBehaviour
         //Reduce fire rate timer
         fireRateTimer -= Time.deltaTime;
 
-        if (timeOfFire + Mathf.Clamp01(fireRate) > Time.time && timeOfFire != 0)
+        //Check if the projectile was just fired
+        if (timeOfFire + Mathf.Clamp(fireRate, minBackFireTime, maxBackFireTime) > Time.time && timeOfFire != 0)
         {
-            float backFireTime = barelRecoilCurve.Evaluate((Time.time - timeOfFire) / Mathf.Clamp01(fireRate));
-            backFireTime = Mathf.Clamp(backFireTime, 0.3f, 1.0f);
-            print(backFireTime);
+            //Calulate the position that the barrel will translate using animation curves and clamp the value between 0 and 1
+            float backFireTime = barelRecoilCurve.Evaluate((Time.time - timeOfFire) / Mathf.Clamp(fireRate, minBackFireTime, maxBackFireTime));
+            backFireTime = Mathf.Clamp01(backFireTime);
+            Debug.Log("Back Fire Time: " + backFireTime);
+
+            //Translate the position of the barrel using animation curves
             barrel.transform.localPosition = new Vector3(barrelStartPosition.x, barrelStartPosition.y, barrelStartPosition.z + backFireTime);
         }
     }
@@ -72,27 +72,88 @@ public class CharacterController : MonoBehaviour
             FireProjectile();
         }
 
-        if (Input.GetKey(KeyCode.W))
-        {
-            playerBase.transform.Translate(Vector3.forward * Time.deltaTime);
-        }
-        if (Input.GetKey(KeyCode.S))
-        {
-            playerBase.transform.Translate(Vector3.back * Time.deltaTime);
-        }
+        //Get scroll wheel input and alter weapon state accordingly
+        scrollInput = Mathf.Clamp((int)Input.mouseScrollDelta.y, -1, 1);
+        weaponState += scrollInput;
+    }
 
-        if (Input.GetKey(KeyCode.A))
+    void UpdateColour()
+    {
+        //Update turret colour
+        GetComponent<MeshRenderer>().material.color = colourList[Mathf.Clamp((int)weaponState, 0, colourList.Count)];
+    }
+
+    void UpdateState()
+    {
+        //Switch between weapon states
+        switch (weaponState)
         {
-            playerBase.transform.Rotate(Vector3.down * Time.deltaTime * 20);
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            playerBase.transform.Rotate(Vector3.up * Time.deltaTime * 20);
+            case WeaponState.firstEnum:
+                weaponState = WeaponState.lastEnum - 1;
+                break;
+            case WeaponState.normalProjectile:
+                break;
+            case WeaponState.laserBeam:
+                break;
+            case WeaponState.lastEnum:
+                weaponState = WeaponState.firstEnum + 1;
+                break;
         }
     }
 
     void FireProjectile()
     {
+        //Reset fire rate timer
+        fireRateTimer = fireRate;
+
+        //Spawn projectile, set position and rotation
+        GameObject newProjectile = Instantiate(projectile, firePoint.position, transform.rotation) as GameObject;
+
+        //Get the time that the projectile was fired at
+        timeOfFire = Time.time;
+    }
+
+    void RotateTurret()
+    {
+        //Calculate turret angle using mouse position
+        Vector3 currentPosition = Camera.main.WorldToScreenPoint(transform.position);
+        Vector3 mouseDirection = Input.mousePosition - currentPosition;
+        float angle = Mathf.Atan2(mouseDirection.x, mouseDirection.y) * Mathf.Rad2Deg;
+        
+        //Rotate turret towards mouse position
+        Debug.Log("Angle: " + angle);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.AngleAxis(angle, Vector3.up), Time.deltaTime * rotateSpeed);
+        
+        //Debug.DrawRay(firePoint.transform.position, firePoint.transform.forward);
+    }
+
+    #region Ignore
+    void FireProjectile(Vector3[] directions, int ammo)
+    {
+
+        List<Action> MyActions = new List<Action>();
+
+        MyActions.Add(FireProjectile);
+        MyActions.Add(FireProjectile);
+
+        //Reset fire rate timer
+        fireRateTimer = fireRate;
+
+        //Spawn projectile, set position and rotation
+        GameObject newProjectile = Instantiate(projectile, firePoint.position, transform.rotation) as GameObject;
+
+        timeOfFire = Time.time;
+
+        //StartCoroutine("FireCoroutine");
+    }
+
+    void FireProjectile(int Ammo)
+    {
+        List<Action> MyActions = new List<Action>();
+
+        MyActions.Add(FireProjectile);
+        MyActions.Add(FireProjectile);
+
         //Reset fire rate timer
         fireRateTimer = fireRate;
 
@@ -105,10 +166,7 @@ public class CharacterController : MonoBehaviour
 
     IEnumerator FireCoroutine()
     {
-        Debug.Log("ONLY ONCE NIGGA!");
         barrelStartPosition = barrel.transform.localPosition;
-
-        
 
         for (int f = 0; f < 60; f++)
         {
@@ -118,20 +176,5 @@ public class CharacterController : MonoBehaviour
             yield return null;
         }
     }
-
-    void RotateTurret()
-    {
-        Vector3 currentPosition = Camera.main.WorldToScreenPoint(transform.position);
-        Vector3 mouseDirection = Input.mousePosition - currentPosition;
-        float angle = Mathf.Atan2(mouseDirection.x, mouseDirection.y) * Mathf.Rad2Deg;
-
-        if (test)
-        {
-            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.AngleAxis(angle, Vector3.up), rotateSpeed * Time.deltaTime);
-        }
-        else
-        {
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.AngleAxis(angle, Vector3.up), Time.deltaTime * 50);
-        }
-    }
+    #endregion
 }
