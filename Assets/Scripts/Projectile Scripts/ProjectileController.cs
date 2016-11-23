@@ -4,19 +4,20 @@ using System.Collections;
 public class ProjectileController : MonoBehaviour
 {
     #region Variables
-    [SerializeField] private float bulletSpeed;
+    public float fireRate;
+
+    [SerializeField] protected float bulletSpeed;
     [SerializeField] private float duration;
     #endregion
 
-    void Start()
+    protected virtual void Start()
     {
         //Destroy projectile after set duration
         Destroy(gameObject, duration);
     }
 
-    void Update()
+    protected virtual void Update()
     {
-        //translate bullet position forwards
-        transform.position = transform.position + transform.forward * Time.deltaTime * bulletSpeed;
+
     }
 }
