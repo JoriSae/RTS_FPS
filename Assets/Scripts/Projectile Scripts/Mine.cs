@@ -34,9 +34,6 @@ public class Mine : ProjectileController
     private Vector3 targetLocation;
 
     private float distance;
-
-    //Size Variables
-    [SerializeField] private float sizeOffset;
     #endregion
 
     protected override void Start()
@@ -51,6 +48,11 @@ public class Mine : ProjectileController
         //Setting spawn time
         spawnTime = Time.time;
 
+        CalculateLocation();
+    }
+
+    void CalculateLocation()
+    {
         //Get mouse position in world units
         mousePosition = Input.mousePosition;
         mousePosition.z = Camera.main.transform.position.y;
@@ -61,11 +63,10 @@ public class Mine : ProjectileController
         startPosition = Vector3.zero;
 
         //Calculate distance
-        float locationDistance = Vector3.Distance(transform.position, mousePosition);
-        float turretDistance = locationDistance - Vector3.Distance(transform.position, startPosition) + sizeOffset;
+        float locationDistance = Vector3.Distance(startPosition, mousePosition);
 
         //Calculate target location
-        targetLocation = (transform.position * 2) + (transform.forward * turretDistance);
+        targetLocation = (transform.forward * locationDistance);
 
         //Reset rotation
         transform.rotation = Quaternion.identity;
