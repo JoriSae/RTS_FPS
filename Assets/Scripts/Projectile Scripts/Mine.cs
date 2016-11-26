@@ -12,7 +12,7 @@ public class Mine : ProjectileController
     public GameObject lightGameObject;
     private GameObject turret;
 
-    [SerializeField] private string turretName;
+    [SerializeField] private string turretName = "Turret";
 
     //Colour Variables
     public List<Color> mineColourList;
@@ -72,12 +72,14 @@ public class Mine : ProjectileController
 
         //Set start position
         startPosition = turret.transform.position;
+        startPosition.y = transform.position.y;
 
         //Calculate distance
         float locationDistance = Vector3.Distance(startPosition, mousePosition);
+        float distanceFromStart = Vector3.Distance(startPosition, transform.position);
 
         //Calculate target location
-        targetLocation = (transform.forward * locationDistance);
+        targetLocation = (transform.position + (transform.forward * (locationDistance - distanceFromStart)));
 
         //Reset rotation
         transform.rotation = Quaternion.identity;
