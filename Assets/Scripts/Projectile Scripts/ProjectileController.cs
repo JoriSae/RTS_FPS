@@ -7,7 +7,7 @@ public class ProjectileController : MonoBehaviour
     public float fireRate;
 
     [SerializeField] protected float bulletSpeed;
-    [SerializeField] private float duration;
+    [SerializeField] protected float duration;
     #endregion
 
     protected virtual void Start()

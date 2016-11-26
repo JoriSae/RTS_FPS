@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -6,7 +7,12 @@ public class Mine : ProjectileController
 {
     #region Variables
     //External Objects
+    public Image mineTimer;
+
     public GameObject lightGameObject;
+    private GameObject turret;
+
+    [SerializeField] private string turretName;
 
     //Colour Variables
     public List<Color> mineColourList;
@@ -17,6 +23,7 @@ public class Mine : ProjectileController
 
     //Timer Variables
     [SerializeField] private float lightBlinkRate;
+    private float durationTimer;
 
     private float spawnTime;
     private float lifeTime;
@@ -24,6 +31,7 @@ public class Mine : ProjectileController
 
     //Armed Variables
     private bool isArmed = false;
+    private bool timerStarted = false;
 
     //Position Variables
     private Vector3 latePosition;
@@ -38,8 +46,11 @@ public class Mine : ProjectileController
 
     protected override void Start()
     {
+        //Set duration timer
+        durationTimer = duration;
 
-        base.Start();
+        //Find turret
+        turret = GameObject.Find(turretName);
 
         //Get Components
         meshRenderer = lightGameObject.GetComponent<MeshRenderer>();
@@ -48,10 +59,10 @@ public class Mine : ProjectileController
         //Setting spawn time
         spawnTime = Time.time;
 
-        CalculateLocation();
+        CalculateDestination();
     }
 
-    void CalculateLocation()
+    void CalculateDestination()
     {
         //Get mouse position in world units
         mousePosition = Input.mousePosition;
@@ -60,7 +71,7 @@ public class Mine : ProjectileController
         mousePosition.y = transform.position.y;
 
         //Set start position
-        startPosition = Vector3.zero;
+        startPosition = turret.transform.position;
 
         //Calculate distance
         float locationDistance = Vector3.Distance(startPosition, mousePosition);
@@ -78,12 +89,12 @@ public class Mine : ProjectileController
 
         UpdateTimers();
         UpdateMovement();
+        UpdateImage();
 
         //Check if the mine is armed
-        if (isArmed)
-        {
-            UpdateLight();
-        }
+        if (isArmed) { UpdateLight(); }
+
+        if (isArmed && !timerStarted) { timerStarted = true;  Destroy(gameObject, duration);  }
 
         isArmed = latePosition == transform.position ? true : false;
     }
@@ -105,6 +116,15 @@ public class Mine : ProjectileController
         transform.Translate(direction * move);
     }
 
+    void UpdateImage()
+    {
+        if (timerStarted) { mineTimer.gameObject.SetActive(true); }
+
+        mineTimer.fillAmount = durationTimer / duration;
+
+        mineTimer.color = Color.Lerp(mineColourList[3], mineColourList[2], durationTimer / duration);
+    }
+
     void UpdateLight()
     {
         //Bounce number between 0 and 1
@@ -124,6 +144,9 @@ public class Mine : ProjectileController
 
         //Update move timer
         moveTimer = Mathf.Clamp01(moveTimer += Time.deltaTime);
+
+        //Updating duration timer
+        if (timerStarted) { durationTimer -= Time.deltaTime; }
     }
 
     void LateUpdate()
