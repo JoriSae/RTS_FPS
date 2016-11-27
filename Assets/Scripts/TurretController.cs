@@ -33,12 +33,12 @@ public class TurretController : MonoBehaviour
     public Transform barrel;
     public Transform firePoint;
 
-    public GameObject muzzel;
+    public GameObject muzzle;
     public GameObject top;
     public GameObject barrelAnchor;
 
     //Firing Variables
-    private bool firing;
+    private bool isfiring;
 
     private float fireRate;
     private float timeOfFire;
@@ -51,7 +51,7 @@ public class TurretController : MonoBehaviour
     public AnimationCurve outBarrelRecoilCurve;
 
     private Vector3 barrelStartPosition;
-    private Vector3 barrelOrigin;
+    private Vector3 barrelOffset;
 
     public float barrelBackFirePercentage;
     public float minBackFire;
@@ -67,7 +67,7 @@ public class TurretController : MonoBehaviour
     public float muzzelExpansionSize;
 
     //Top Variables
-    private Vector3 topOrigin;
+    private Vector3 topOffset;
     private Vector3 initialTopSize;
     private Vector3 topStartPosition;
     public float topExpansionSize;
@@ -83,17 +83,19 @@ public class TurretController : MonoBehaviour
     void Start()
     {
         //Get component
-        muzzelMaterial = muzzel.GetComponent<MeshRenderer>();
+        muzzelMaterial = muzzle.GetComponent<MeshRenderer>();
         turretMaterial = top.transform.GetChild(0).gameObject.GetComponent<MeshRenderer>();
 
-        topOrigin.z = -topBackFirePercentage;
-        barrelOrigin.z = -barrelBackFirePercentage;
+        //Set offset
+        topOffset.z = -topBackFirePercentage;
+        barrelOffset.z = -barrelBackFirePercentage;
 
         //Set start position
-        barrelStartPosition = gameObject.transform.localPosition + barrelOrigin;
-        topStartPosition = top.transform.localPosition + topOrigin;
+        barrelStartPosition = gameObject.transform.localPosition + barrelOffset;
+        topStartPosition = top.transform.localPosition + topOffset;
 
-        initialMuzzelSize = muzzel.GetComponent<Transform>().localScale;
+        //Get current scale
+        initialMuzzelSize = muzzle.GetComponent<Transform>().localScale;
         initialTopSize = top.GetComponent<Transform>().localScale;
     }
 
@@ -115,13 +117,13 @@ public class TurretController : MonoBehaviour
     void UpdateInput()
     {
         //Check if the player can fire and if the assigned fire key is pressed, if so fire projectile
-        if (Input.GetMouseButton(0) && !firing) { StartCoroutine("FireCoroutine"); }
+        if (Input.GetMouseButton(0) && !isfiring) { StartCoroutine("FireCoroutine"); }
 
         //Get scroll wheel input and alter weapon state accordingly
         scrollInput = Mathf.Clamp((int)Input.mouseScrollDelta.y, -1, 1);
 
         //Update weapon state using scroll input
-        if (weaponSwapTimer <= 0 && scrollInput != 0 && !firing)
+        if (weaponSwapTimer <= 0 && scrollInput != 0 && !isfiring)
         {
             weaponState += scrollInput;
             weaponSwapTimer = weaponSwapDelay;
@@ -165,21 +167,23 @@ public class TurretController : MonoBehaviour
 
     void RotateTurret()
     {
-        //Calculate turret angle using mouse position
-        Vector3 currentPosition = Camera.main.WorldToScreenPoint(transform.position);
-        Vector3 mouseDirection = Input.mousePosition - currentPosition;
-        float angle = Mathf.Atan2(mouseDirection.x, mouseDirection.y) * Mathf.Rad2Deg;
+        //Get mouse position in world units
+        Vector3 mousePosition = Camera.main.WorldToScreenPoint(transform.position);
+
+        //Get mouse heading
+        Vector3 mouseHeading = Input.mousePosition - mousePosition;
+
+        //Get mouse angle
+        float angle = Mathf.Atan2(mouseHeading.x, mouseHeading.y) * Mathf.Rad2Deg;
         
         //Rotate turret towards mouse position
-        //Debug.Log("Angle: " + angle);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.AngleAxis(angle, Vector3.up), Time.deltaTime * rotateSpeed);
-        
-        //Debug.DrawRay(firePoint.transform.position, firePoint.transform.forward);
     }
 
     IEnumerator FireCoroutine()
     {
-        firing = true;
+        //Set firing to true
+        isfiring = true;
 
         //Fire Projectile
         FireProjectile();
@@ -193,18 +197,26 @@ public class TurretController : MonoBehaviour
             backFireTime = inBarrelRecoilCurve.Evaluate((Time.time - timeOfFire) / fireAnimationTime);
             backFireTime = Mathf.Clamp(backFireTime, minBackFire, maxBackFire);
 
-            //Lerp muzzel
+            //Lerp muzzel scale and colour using animation curves
             muzzelMaterial.material.color = Color.Lerp(Color.gray, colourList[(int)weaponState], (Time.time - timeOfFire) / fireAnimationTime);
-            muzzel.transform.localScale = Vector3.Lerp(initialMuzzelSize, initialMuzzelSize * muzzelExpansionSize, (Time.time - timeOfFire) / fireAnimationTime);
+            muzzle.transform.localScale = Vector3.Lerp(initialMuzzelSize, initialMuzzelSize * muzzelExpansionSize, (Time.time - timeOfFire) / fireAnimationTime);
 
-            //Lerp top
+            //Lerp top scale and position using animation curves
+            Vector3 turretTopBackFirePosition = new Vector3(topStartPosition.x, topStartPosition.y, topStartPosition.z + (backFireTime * topBackFirePercentage));
+            top.transform.localPosition = turretTopBackFirePosition;
             top.transform.localScale = Vector3.Lerp(initialTopSize, new Vector3(initialTopSize.x * topExpansionSize, initialTopSize.y * topExpansionSize, initialTopSize.z), (Time.time - timeOfFire) / fireAnimationTime);
-            top.transform.localPosition = new Vector3(topStartPosition.x, topStartPosition.y, topStartPosition.z + (backFireTime * topBackFirePercentage));
-            //barrelAnchor.transform.localPosition = new Vector3(topStartPosition.x, topStartPosition.y, topStartPosition.z + (backFireTime * backFirePercentage));
 
             //Translate the position of the barrel using animation curves
-            barrel.transform.localPosition = new Vector3(barrelStartPosition.x, barrelStartPosition.y, barrelStartPosition.z + (backFireTime * barrelBackFirePercentage));
+            Vector3 barrelBackFirePosition = new Vector3(barrelStartPosition.x, barrelStartPosition.y, barrelStartPosition.z + (backFireTime * barrelBackFirePercentage));
+            barrel.transform.localPosition = barrelBackFirePosition;
 
+            yield return null;
+        }
+
+        //Check if weapon is laser, if so yeild and update time of fire until the left mouse button is no longer pressed
+        while (weaponState == WeaponState.laserBeam && Input.GetMouseButton(0))
+        {
+            timeOfFire = Time.time - fireAnimationTime;
             yield return null;
         }
 
@@ -214,22 +226,24 @@ public class TurretController : MonoBehaviour
             backFireTime = outBarrelRecoilCurve.Evaluate((Time.time - timeOfFire) / fireRate - fireAnimationTime);
             backFireTime = Mathf.Clamp(backFireTime, minBackFire, maxBackFire);
 
-            //Lerp muzzel
+            //Lerp muzzel scale and colour using animation curves
             muzzelMaterial.material.color = Color.Lerp(colourList[(int)weaponState], Color.gray, (Time.time - timeOfFire) / fireRate);
-            muzzel.transform.localScale = Vector3.Lerp(initialMuzzelSize * muzzelExpansionSize, initialMuzzelSize, (Time.time - timeOfFire) / fireRate);
+            muzzle.transform.localScale = Vector3.Lerp(initialMuzzelSize * muzzelExpansionSize, initialMuzzelSize, (Time.time - timeOfFire) / fireRate);
 
-            //Lerp top
+            //Lerp top scale and position using animation curves
+            Vector3 turretTopBackFirePosition = new Vector3(topStartPosition.x, topStartPosition.y, topStartPosition.z + (backFireTime * topBackFirePercentage));
+            top.transform.localPosition = turretTopBackFirePosition;
             top.transform.localScale = Vector3.Lerp(new Vector3(initialTopSize.x * topExpansionSize, initialTopSize.y * topExpansionSize, initialTopSize.z), initialTopSize, (Time.time - timeOfFire) / fireRate);
-            top.transform.localPosition = new Vector3(topStartPosition.x, topStartPosition.y, topStartPosition.z + (backFireTime * topBackFirePercentage));
-            //barrelAnchor.
 
             //Translate the position of the barrel using animation curves
-            barrel.transform.localPosition = new Vector3(barrelStartPosition.x, barrelStartPosition.y, barrelStartPosition.z + (backFireTime * barrelBackFirePercentage));
+            Vector3 barrelBackFirePosition = new Vector3(barrelStartPosition.x, barrelStartPosition.y, barrelStartPosition.z + (backFireTime * barrelBackFirePercentage));
+            barrel.transform.localPosition = barrelBackFirePosition;
 
             yield return null;
         }
 
-        firing = false;
+        //Set firing to false
+        isfiring = false;
     }
     #region Ignore
     void FireProjectile(Vector3[] directions, int ammo)

@@ -81,6 +81,9 @@ public class Mine : ProjectileController
         //Calculate target location
         targetLocation = (transform.position + (transform.forward * (locationDistance - distanceFromStart)));
 
+        //If distance is in the negatives, set mine destination to be its current position
+        targetLocation = locationDistance - distanceFromStart > 0 ? targetLocation : transform.position;
+
         //Reset rotation
         transform.rotation = Quaternion.identity;
     }
@@ -109,21 +112,24 @@ public class Mine : ProjectileController
         direction = direction.normalized;
 
         //Set movespeed
-        float move = bulletSpeed * Time.deltaTime;
+        float movement = bulletSpeed * Time.deltaTime;
 
         //Set move conditions
-        if (move > distance) { move = distance; }
+        if (movement > distance) { movement = distance; }
 
         //Move in set direction at given speed
-        transform.Translate(direction * move);
+        transform.Translate(direction * movement);
     }
 
     void UpdateImage()
     {
+        //Set image to be active if the mine is active
         if (timerStarted) { mineTimer.gameObject.SetActive(true); }
 
+        //Updates image fill amount
         mineTimer.fillAmount = durationTimer / duration;
 
+        //Lerps image colour
         mineTimer.color = Color.Lerp(mineColourList[3], mineColourList[2], durationTimer / duration);
     }
 
