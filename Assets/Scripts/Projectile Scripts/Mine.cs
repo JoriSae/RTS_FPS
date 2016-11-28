@@ -34,6 +34,8 @@ public class Mine : ProjectileController
     private bool timerStarted = false;
 
     //Position Variables
+    [SerializeField] private AnimationCurve mineSpeedCurve;
+
     private Vector3 latePosition;
     private Vector3 startPosition;
     private Vector3 mousePosition;
@@ -106,19 +108,11 @@ public class Mine : ProjectileController
 
     void UpdateMovement()
     {
-        //Get direction
-        direction = targetLocation - transform.position;
-        distance = direction.magnitude;
-        direction = direction.normalized;
-
         //Set movespeed
         float movement = bulletSpeed * Time.deltaTime;
 
-        //Set move conditions
-        if (movement > distance) { movement = distance; }
-
-        //Move in set direction at given speed
-        transform.Translate(direction * movement);
+        //Move towards target destination
+        transform.position = Vector3.MoveTowards(transform.position, targetLocation, movement);
     }
 
     void UpdateImage()
