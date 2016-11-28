@@ -29,6 +29,12 @@ public class Laser : ProjectileController
     [SerializeField] private string firingPointName = "Firing Point";
 
     private GameObject firingPoint;
+
+    //Fire Rate variables
+    [SerializeField] private float minReloadTime;
+    [SerializeField] private float maxReloadTime;
+
+    private float lifeTimeTimer;
     #endregion
 
     protected override void Start()
@@ -91,11 +97,18 @@ public class Laser : ProjectileController
 
         //Set laser width
         lineRenderer.SetWidth(width, width);
+
+        //Set fire rate based on life time
+        fireRate = lifeTimeTimer;
     }
 
     void UpdateTimers()
     {
         //Update Timer
         laserSizeTimer = Mathf.Clamp(laserSizeTimer + Time.deltaTime, 0, laserSizeExpansionRate);
+
+        lifeTimeTimer = Mathf.Clamp(lifeTimeTimer + Time.deltaTime, minReloadTime, maxReloadTime);
+
+        print(lifeTimeTimer);
     }
 }

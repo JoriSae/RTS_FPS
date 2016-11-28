@@ -39,11 +39,12 @@ public class Mine : ProjectileController
     private Vector3 latePosition;
     private Vector3 startPosition;
     private Vector3 mousePosition;
-    private Vector3 direction;
-    private Vector3 destination;
     private Vector3 targetLocation;
 
     private float distance;
+
+    //Size Variables
+    [SerializeField] private AnimationCurve mineScaleCurve;
     #endregion
 
     protected override void Start()
@@ -79,9 +80,10 @@ public class Mine : ProjectileController
         //Calculate distance
         float locationDistance = Vector3.Distance(startPosition, mousePosition);
         float distanceFromStart = Vector3.Distance(startPosition, transform.position);
+        distance = locationDistance - distanceFromStart;
 
         //Calculate target location
-        targetLocation = (transform.position + (transform.forward * (locationDistance - distanceFromStart)));
+        targetLocation = (transform.position + (transform.forward * distance));
 
         //If distance is in the negatives, set mine destination to be its current position
         targetLocation = locationDistance - distanceFromStart > 0 ? targetLocation : transform.position;
@@ -101,7 +103,7 @@ public class Mine : ProjectileController
         //Check if the mine is armed
         if (isArmed) { UpdateLight(); }
 
-        if (isArmed && !timerStarted) { timerStarted = true;  Destroy(gameObject, duration);  }
+        if (isArmed && !timerStarted) { timerStarted = true;  Destroy(gameObject, duration); }
 
         isArmed = latePosition == transform.position ? true : false;
     }
@@ -110,6 +112,12 @@ public class Mine : ProjectileController
     {
         //Set movespeed
         float movement = bulletSpeed * Time.deltaTime;
+
+        //Alter movement speed using animation curves
+        movement *= mineSpeedCurve.Evaluate(Vector3.Distance(transform.position, targetLocation) / distance);
+
+        //Alter game object scale using animation curves
+        gameObject.transform.localScale = Vector3.one * mineScaleCurve.Evaluate(Vector3.Distance(transform.position, targetLocation) / distance);
 
         //Move towards target destination
         transform.position = Vector3.MoveTowards(transform.position, targetLocation, movement);

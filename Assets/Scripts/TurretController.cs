@@ -217,6 +217,7 @@ public class TurretController : MonoBehaviour
         while (weaponState == WeaponState.laserBeam && Input.GetMouseButton(0))
         {
             timeOfFire = Time.time - fireAnimationTime;
+
             yield return null;
         }
 
