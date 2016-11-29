@@ -84,31 +84,24 @@ public class Laser : ProjectileController
 
             //Set particle emission to true
             particleEmission.enabled = true;
+
+            transform.position = lineRendererPositions[1];
+            transform.rotation = firingPoint.transform.rotation;
         }
 
         //Assign line renderer the array of stored positions
         lineRenderer.SetPositions(lineRendererPositions);
-
-        transform.position = lineRendererPositions[1];
-        transform.rotation = firingPoint.transform.rotation;
 
         //Calculate laser width
         float width = Mathf.Lerp(minLaserWidth, maxLaserWidth, laserSizeTimer / laserSizeExpansionRate);
 
         //Set laser width
         lineRenderer.SetWidth(width, width);
-
-        //Set fire rate based on life time
-        fireRate = lifeTimeTimer;
     }
 
     void UpdateTimers()
     {
         //Update Timer
         laserSizeTimer = Mathf.Clamp(laserSizeTimer + Time.deltaTime, 0, laserSizeExpansionRate);
-
-        lifeTimeTimer = Mathf.Clamp(lifeTimeTimer + Time.deltaTime, minReloadTime, maxReloadTime);
-
-        print(lifeTimeTimer);
     }
 }
