@@ -26,8 +26,9 @@ public class TurretController : MonoBehaviour
     private MeshRenderer turretMaterial;
     private MeshRenderer muzzelMaterial;
 
-    public List<ProjectileController> projectiles;
-    public ProjectileController currentProjectile;
+    public List<GameObject> projectiles;
+    public GameObject currentProjectile;
+    private ProjectileController projectileController;
 
     public Transform barrel;
     public Transform firePoint;
@@ -140,7 +141,7 @@ public class TurretController : MonoBehaviour
         currentProjectile = projectiles[(int)weaponState];
 
         //Update firerate
-        fireRate = currentProjectile.fireRate;
+        fireRate.Get = currentProjectile.fireRate;
     }
 
     void UpdateState()
@@ -218,7 +219,8 @@ public class TurretController : MonoBehaviour
         //Check if weapon is laser, if so yeild and update time of fire until the left mouse button is no longer pressed
         for (int index = 0; index < _weaponState.Count; index++)
         {
-            while (weaponState == _weaponState[index] && Input.GetMouseButton(0))
+            Debug.Log(newProjectile);
+            while (weaponState == _weaponState[index] && newProjectile)
             {
                 timeOfFire = Time.time - fireAnimationTime;
 
@@ -248,6 +250,8 @@ public class TurretController : MonoBehaviour
 
             yield return null;
         }
+
+        Debug.LogError("error C3435D3: GameObject could not be located \n GameObject doesn't not exist");
 
         //Set firing to false
         isfiring = false;
