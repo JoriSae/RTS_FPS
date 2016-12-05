@@ -103,5 +103,7 @@ public class Laser : ProjectileController
     {
         //Update Timer
         laserSizeTimer = Mathf.Clamp(laserSizeTimer + Time.deltaTime, 0, laserSizeExpansionRate);
+
+        fireRate = Mathf.Clamp(fireRate + Time.deltaTime, minReloadTime, maxReloadTime);
     }
 }
