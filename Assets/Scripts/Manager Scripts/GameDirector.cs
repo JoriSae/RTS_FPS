@@ -20,7 +20,6 @@ public class GameDirector : MonoBehaviour
         WeaponInfo,
         EndScreen
     }
-
     #endregion
 
     void Awake()
@@ -28,26 +27,54 @@ public class GameDirector : MonoBehaviour
         instance = this;
     }
 
-	// Use this for initialization
 	void Start()
     {
-	    
-	}
-	
-	// Update is called once per frame
-	void Update()
-    {
-	
+        GoToSplashScreen();
 	}
 
-    void GoToSplashScreen()
+    public void GoToSplashScreen()
     {
         currentScreen = Screens.Splash;
-        //Load Splash Screen
+        sceneDirector.LoadScene("Splash Screen");
     }
 
-    void GoToMainMenu()
+    public void GoToMainMenuScreen()
     {
-        //Unload Splash Screen
+        currentScreen = Screens.MainMenu;
+        sceneDirector.LoadScene("Main Menu");
+        sceneDirector.UnloadScene("Splash Screen");
+        sceneDirector.UnloadScene("Game Play");
+        sceneDirector.UnloadScene("Settings");
+        sceneDirector.UnloadScene("Weapon Info");
+        sceneDirector.UnloadScene("End Screen");
+        sceneDirector.UnloadScene("Pause Menu");
+    }
+
+    public void GoToSettingsScreen()
+    {
+        currentScreen = Screens.Settings;
+        sceneDirector.LoadScene("Settings");
+        sceneDirector.UnloadScene("Main Menu");
+    }
+
+    public void GoToGamePlayScreen()
+    {
+        currentScreen = Screens.Gameplay;
+        sceneDirector.LoadScene("Game Play");
+        sceneDirector.UnloadScene("Main Menu");
+    }
+
+    public void GoToWeaponInfoScreen()
+    {
+        currentScreen = Screens.WeaponInfo;
+        sceneDirector.LoadScene("Weapon Info");
+        sceneDirector.UnloadScene("Main Menu");
+    }
+
+    public void GoToEndScreen()
+    {
+        currentScreen = Screens.EndScreen;
+        sceneDirector.LoadScene("End Screen");
+        sceneDirector.UnloadScene("Game Play");
     }
 }

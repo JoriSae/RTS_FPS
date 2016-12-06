@@ -36,6 +36,12 @@ public class TurretController : MonoBehaviour
     public GameObject top;
     public GameObject barrelAnchor;
 
+    //Audio
+    public AudioClip firingMine;
+    public AudioClip firingLaser;
+    public AudioClip firingNormalProjectile;
+    public AudioClip laserRecharge;
+
     //Firing Variables
     private ProjectileController newProjectile;
 
@@ -118,7 +124,7 @@ public class TurretController : MonoBehaviour
     void UpdateInput()
     {
         //Check if the player can fire and if the assigned fire key is pressed, if so fire projectile
-        if (Input.GetMouseButton(0) && !isfiring) { StartCoroutine(FireCoroutine(1,1, weaponStates)); }
+        if (Input.GetMouseButton(0) && !isfiring) { CheckState(); }
 
         //Get scroll wheel input and alter weapon state accordingly
         scrollInput = Mathf.Clamp((int)Input.mouseScrollDelta.y, -1, 1);
@@ -147,15 +153,21 @@ public class TurretController : MonoBehaviour
     {
         if (weaponState == WeaponState.firstEnum) { weaponState = WeaponState.lastEnum - 1; }
         else if (weaponState == WeaponState.lastEnum) { weaponState = WeaponState.firstEnum + 1; }
+    }
 
+    void CheckState()
+    {
         //Switch between weapon states
         switch (weaponState)
         {
             case WeaponState.normalProjectile:
+                StartCoroutine(FireCoroutine(firingNormalProjectile, null, null, weaponStates));
                 break;
             case WeaponState.mine:
+                StartCoroutine(FireCoroutine(firingMine, null, null, weaponStates));
                 break;
             case WeaponState.laserBeam:
+                StartCoroutine(FireCoroutine(null, firingLaser, laserRecharge, weaponStates));
                 break;
         }
     }
@@ -182,13 +194,16 @@ public class TurretController : MonoBehaviour
         transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.AngleAxis(angle, Vector3.up), Time.deltaTime * rotateSpeed);
     }
 
-    IEnumerator FireCoroutine(float _inAnimationTime, float _outAnimationTime, List<WeaponState> _weaponState)
+    IEnumerator FireCoroutine(AudioClip _initialFire, AudioClip _constantFire, AudioClip _recharge, List<WeaponState> _weaponState)
     {
         //Set firing to true
         isfiring = true;
 
         //Fire Projectile
         FireProjectile();
+
+        //Play audio
+        GameDirector.instance.audioDirector.PlayAudio(GameDirector.instance.audioDirector.soundEffectsSource, _initialFire);
 
         //Get the time that the projectile was fired at
         timeOfFire = Time.time;
@@ -216,6 +231,8 @@ public class TurretController : MonoBehaviour
             yield return null;
         }
 
+        GameDirector.instance.audioDirector.PlayAudio(GameDirector.instance.audioDirector.loopedSoundEffectsSource, _constantFire);
+
         //Check if weapon is laser, if so yeild and update time of fire until the left mouse button is no longer pressed
         for (int index = 0; index < _weaponState.Count; index++)
         {
@@ -226,6 +243,10 @@ public class TurretController : MonoBehaviour
                 yield return null;
             }
         }
+
+        GameDirector.instance.audioDirector.StopAudio(GameDirector.instance.audioDirector.loopedSoundEffectsSource);
+
+        GameDirector.instance.audioDirector.PlayAudio(GameDirector.instance.audioDirector.loopedSoundEffectsSource, _recharge);
 
         while (timeOfFire + fireRate > Time.time)
         {
@@ -249,6 +270,8 @@ public class TurretController : MonoBehaviour
 
             yield return null;
         }
+
+        GameDirector.instance.audioDirector.StopAudio(GameDirector.instance.audioDirector.loopedSoundEffectsSource);
 
         //Set firing to false
         isfiring = false;
